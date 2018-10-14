@@ -1,0 +1,18 @@
+<template>
+    <header class="main-header">
+        <h1>Todo</h1>
+    </header>
+</template>
+
+<style lang="stylus" scoped>
+    .main-header{
+        text-align: center
+        h1{
+            font-style: 100px
+            color: #000
+            font-weight 100
+            margin 20px
+        }
+    }
+
+</style>
