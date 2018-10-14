@@ -2,6 +2,7 @@ const path = require('path')
 const { VueLoaderPlugin } = require('vue-loader')
 const HTMLPlugin = require('html-webpack-plugin')
 const webpack = require('webpack')
+const MiniCssExtractPlugin = require('mini-css-extract-plugin')
 
 const isDev = process.env.NODE_ENV ==='development'
 const config = {
@@ -24,29 +25,16 @@ const config = {
             {
                 test: /\.jsx$/,
                 use: ['babel-loader'],
+
             },
-            {
-                test: /\.css$/,
-                use: [
-                    'vue-style-loader',  //可以不要
-                    'style-loader',
-                    'css-loader'
-                ]
-            },
-            {
-                test:/\.styl/,
-                use:[
-                    'style-loader',
-                    'css-loader',
-                    {
-                        loader:'postcss-loader',
-                        options:{
-                            sourceMap:true  //编译的会更快
-                        }
-                    },
-                    'stylus-loader'
-                ]
-            },
+            // {
+            //     test: /\.css$/,
+            //     use: [
+            //         'vue-style-loader',                //可以不要
+            //         'style-loader',
+            //         'css-loader'
+            //     ]
+            // },
 
             {
                 test:/\.gif|jpg|jpeg|svg|png$/,
@@ -62,6 +50,7 @@ const config = {
         ]
     },
     plugins: [
+        // new webpack.HotModuleReplacementPlugin(),
         new VueLoaderPlugin(),
         new webpack.DefinePlugin({
             'process.env':{
@@ -71,9 +60,29 @@ const config = {
         new HTMLPlugin()
 
     ],
-};
-if (isDev){
+
+
+}
+
+if(isDev){
     config.devtool = "#cheap-moudule-eval-source-map"
+    config.mode= 'development',
+        config.module.rules.push(
+            {
+                test:/\.styl/,
+                use:[
+                    'style-loader',
+                    'css-loader',
+                    {
+                        loader:'postcss-loader',
+                        options:{
+                            sourceMap:true
+                        }
+                    },
+                    'stylus-loader'
+                ]
+            },
+        )
     config.devServer={
     port:8000,
     host:'0.0.0.0',
@@ -86,5 +95,54 @@ if (isDev){
         new webpack.HotModuleReplacementPlugin()  //热加载模块
     )
 }
+else{
+    config.entry = {
+        app: path.resolve(__dirname, 'src/index.js'),
+        vendor:['vue']
+    }
+    config.mode = 'production',
+        config.output.filename = '[name].[chunkhash:8].js'
+    config.module.rules.push(
+        {
+            test:/\.styl/,
 
+            use: [
+                MiniCssExtractPlugin.loader,
+                'css-loader',
+                {
+                    loader: 'postcss-loader',
+                    options: {
+                        sourceMap: true,
+
+                    }
+                },
+                'stylus-loader'
+            ]
+
+        })
+    config.plugins.push(
+        new MiniCssExtractPlugin({
+            filename:'styles.[contenthash:8].css'
+        }))
+    config.optimization = {
+        splitChunks: {
+            cacheGroups: {
+                commons: {
+                    chunks: 'initial',
+                    minChunks: 2, maxInitialRequests: 5,
+                    minSize: 0
+                },
+                vendor: {
+                    test: /[\\/]node_modules[\\/]/,
+                    chunks: 'initial',
+                    name: 'vendor',
+                    priority: 10,
+                    enforce: true
+                }
+            }
+        },
+        runtimeChunk: true
+    }
+
+}
 module.exports = config;
